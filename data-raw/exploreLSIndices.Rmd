@@ -21,16 +21,26 @@ load("fdiLS_raw.RData")
 fdiLS %>% 
   mutate(month=month(date)) %>% # create month column
   mutate(year=year(date)) %>% # create month column
+  filter(year<=2005) %>% # limit sites to chronology timeframe
   group_by(site,year,month) %>% 
   summarise(Num=n()) %>% 
-  filter(month>=4 & month<=10) # filter for April to October months
+  ungroup() %>% 
+  group_by(site,month) %>% 
+  summarise(Num=n()) %>% # this will give total values for this site/month
+  filter(month>=4 & month<=10) %>%  # filter for April to October months
+  # pivot_wider(names_from=month,values_from=Num) %>% # move to wider format to examine for missing values
+  # dplyr::select(site,year,as.character(4:10)) # need to reorder columns
   
-
-
-
+  # plotting to create boxplots
+  ggplot()+
+  aes(x=month,y=Num)+
+  geom_bar(stat="Identity")+
+  facet_wrap(~site)+
+  ylab("Number of years with at least one scene")
 
 ```
 
+Based on this figure, it looks like July, August and September have the most scenes for each site, suggesting we should focus on spectral indices for those three months.
 
 
 
