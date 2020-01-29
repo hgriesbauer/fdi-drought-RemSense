@@ -1,0 +1,51 @@
+---
+title: "Explore Landsat indices"
+author: "Hardy Griesbauer"
+date: "29/01/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(plotly)
+
+# Load data
+load("fdiLS_raw.RData")
+
+```
+
+# summarize spectral indices by site, year and month
+```{r}
+fdiLS %>% 
+  mutate(month=month(date)) %>% # create month column
+  mutate(year=year(date)) %>% # create month column
+  group_by(site,year,month) %>% 
+  summarise(Num=n()) %>% 
+  filter(month>=4 & month<=10) # filter for April to October months
+  
+
+
+
+
+```
+
+
+
+
+# Explore LS indices to create final dataset
+```{r}
+
+x<-
+  fdiLS %>% 
+  filter(site=="whiteman") 
+  
+ggplotly(ggplot(data=x)+
+  aes(x=date,y=ndvi)+
+  geom_line())
+  
+
+
+
+```

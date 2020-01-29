@@ -25,3 +25,10 @@ X<-
                 ndmi,evi,everything()) %>% 
   arrange(desc(site),date)
 
+# save into data-raw folder
+# still some processing required to come up with final LS dataset
+fdiLS<-X
+save(fdiLS,file="data-raw/fdiLS_raw.RData")
+
+
+
