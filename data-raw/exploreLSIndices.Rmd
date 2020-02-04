@@ -45,19 +45,15 @@ Based on this figure, it looks like July, August and September have the most sce
 
 
 # Explore LS indices to create final dataset
+
+## Boxplots to detect extreme outliers
+
 ```{r}
-
-x<-
-  fdiLS %>% 
-  mutate(month=lubridate::month(date)) %>% # create month column
-  mutate(year=lubridate::year(date)) %>% # create month column
-  filter(year<=2005) # limit years to chronology timeframe (2005)
+fdiLS %>%
+  pivot_longer(cols=blue:evi,names_to="index",values_to="value") %>% 
+  ggplot()+
+  geom_boxplot(aes(y=value))+
+  facet_wrap(~index,scales="free_y")
   
-ggplotly(ggplot(data=x)+
-  aes(x=date,y=evi)+
-  geom_line())
-  
-
-
 
 ```
