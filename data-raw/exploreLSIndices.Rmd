@@ -19,19 +19,19 @@ load("fdiLS_raw.RData")
 # summarize spectral indices by site, year and month
 ```{r}
 fdiLS %>% 
-  mutate(month=month(date)) %>% # create month column
-  mutate(year=year(date)) %>% # create month column
-  filter(year<=2005) %>% # limit sites to chronology timeframe
+  mutate(month=lubridate::month(date)) %>% # create month column
+  mutate(year=lubridate::year(date)) %>% # create month column
+  filter(year<=2005) %>% # limit years to chronology timeframe (2005)
   group_by(site,year,month) %>% 
   summarise(Num=n()) %>% 
   ungroup() %>% 
   group_by(site,month) %>% 
   summarise(Num=n()) %>% # this will give total values for this site/month
-  filter(month>=4 & month<=10) %>%  # filter for April to October months
+  # filter(month>=4 & month<=10) %>%  # filter for April to October months
   # pivot_wider(names_from=month,values_from=Num) %>% # move to wider format to examine for missing values
   # dplyr::select(site,year,as.character(4:10)) # need to reorder columns
   
-  # plotting to create boxplots
+  # plotting to create barplots
   ggplot()+
   aes(x=month,y=Num)+
   geom_bar(stat="Identity")+
@@ -49,10 +49,12 @@ Based on this figure, it looks like July, August and September have the most sce
 
 x<-
   fdiLS %>% 
-  filter(site=="whiteman") 
+  mutate(month=lubridate::month(date)) %>% # create month column
+  mutate(year=lubridate::year(date)) %>% # create month column
+  filter(year<=2005) # limit years to chronology timeframe (2005)
   
 ggplotly(ggplot(data=x)+
-  aes(x=date,y=ndvi)+
+  aes(x=date,y=evi)+
   geom_line())
   
 

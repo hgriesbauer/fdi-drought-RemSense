@@ -12,7 +12,13 @@ X<-
 # Data cleaning/wrangling
   drop_na(blue) %>%  # drop all rows that are missing spectral values
   mutate(date=ymd(date)) %>%  # convert to date format
-
+  
+# Screen for outliers
+  filter(blue<1.5) %>% # took a look at extreme outliers in boxplot
+  filter(green<1.5) %>% # took a look at extreme outliers in boxplot
+  filter(nir<1.5) %>% # took a look at extreme outliers in boxplot
+  filter(swir1<1.5) %>% # took a look at extreme outliers in boxplot
+  
 # Create indices
   mutate(ndvi=(nir-red)/(nir+red)) %>% # vegetation and biomass index
   mutate(ndwi=(green-nir)/(green+nir)) %>%  # water body index
