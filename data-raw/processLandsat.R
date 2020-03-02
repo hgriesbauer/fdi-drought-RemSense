@@ -7,7 +7,7 @@ library(lubridate)
 # Script path for GEE: https://code.earthengine.google.com/?scriptPath=users%2Fhardygriesbauer%2Ftrial%3AfdiPoints_indices
 
 X<-
-  read_csv("data-raw/Pixel_extract_50cl_clMask_20200128_collect_fdiPoints.csv") %>% 
+  read_csv("data-raw/Pixel_extract_50cl_clMask_20200218_collect_fdiPoints.csv") %>% 
 
 # Data cleaning/wrangling
   drop_na(blue) %>%  # drop all rows that are missing spectral values
@@ -35,6 +35,29 @@ X<-
 # still some processing required to come up with final LS dataset
 fdiLS<-X
 save(fdiLS,file="data-raw/fdiLS_raw.RData")
+
+# Create monthly indices
+# Using max or min
+fdiMonthLS<-
+  fdiLS %>% 
+  mutate(month=lubridate::month(date)) %>% 
+  mutate(year=lubridate::year(date)) %>% 
+  filter(year<=2007) %>% 
+  group_by(site,year,month) %>% 
+  summarise(ndvi=max(ndvi,na.rm=TRUE),
+            ndwi=min(ndwi,na.rm=TRUE),
+            ndwi2=min(ndwi2,na.rm=TRUE),
+            evi=max(evi,na.rm=TRUE),
+            ndmi=max(ndmi,na.rm=TRUE))
+
+save(fdiMonthLS,file=here::here("data","fdiMonthLS.RData"))
+            
+            
+                     
+  
+  
+
+
 
 
 

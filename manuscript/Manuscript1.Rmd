@@ -1,0 +1,293 @@
+---
+title: "Manuscript1"
+author: "Hardy Griesbauer"
+date: "20/02/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# libraries
+library(tidyverse)
+library(dplR)
+library(knitr)
+library(treeclim)
+
+# load data
+load(here::here("data","fdi2020.RData"))
+
+```
+
+## TABLE: Chronology statistics
+The chunk below is set not to run, as it will take a long time.  Instead, the table is saved into the 'data' folder and can be manipulated by the next chunk.
+
+```{r eval=FALSE}
+# Function to create statistics for chronologies
+  # Set up parameters for detrending
+
+spline.yrs=60
+
+# Function to extract information for sites
+  rwi.extract=function(site) {
+    
+    
+  rwi.ext.subFunc<-function(crnType) {  
+    
+    # set spline window
+    spline.yrs=60
+    
+    # Get crnType
+    X<-fdi2020$ring
+    
+    # get site
+    a=X[[crnType]][[site]] 
+    
+    # Subset for years less than 2010
+    a=a[which(as.integer(rownames(a))<=2005),]
+    
+    # detrend and compute site stats
+    a.stats=rwi.stats(detrend(a,method="Spline",nyrs=spline.yrs),prewhiten=TRUE)
+    eps.stats=rwi.stats.running(detrend(a,method="Spline",nyrs=spline.yrs),prewhiten=TRUE,window.length=65)
+    
+    # have to transpose if only one row of data
+    if(dim(eps.stats)[2]==1) eps.stats=as.data.frame(t(eps.stats))
+    
+    b.stats=rwl.stats(a)
+    
+    # return
+    return(data.frame(site=site,
+                      first=min(b.stats$first),
+                      last=max(b.stats$last),
+                      year=max(b.stats$year),
+                      n.trees=a.stats$n.trees,
+                      rbar=eps.stats$rbar.bt[nrow(eps.stats)],
+                      eps=eps.stats$eps[nrow(eps.stats)]
+           )
+    )
+    
+  }
+  
+ # Run the subfunction
+   ew<-rwi.ext.subFunc("ew") %>% 
+    dplyr::select(Site=site,ew.rbar=rbar,ew.eps=eps)
+  
+  lw<-rwi.ext.subFunc("lw") %>% 
+    dplyr::select(Site=site,lw.rbar=rbar,lw.eps=eps)
+  
+  # RETURN
+   
+    rwi.ext.subFunc("rw") %>% 
+    dplyr::select(Site=site,First=first,
+                  Last=last,Year=year,N.Trees=n.trees,rw.rbar=rbar,rw.eps=eps) %>% 
+    inner_join(ew,by="Site") %>% 
+    inner_join(lw,by="Site") %>% 
+      return()
+  }
+    
+  
+  
+# Create chronology statistics
+  x<-
+      lapply(names(fdi2020$ring$rw),rwi.extract) %>% 
+      do.call(rbind.data.frame,.)  
+  
+  crnStats<-
+    fdi2020 %>% 
+     pluck("clim") %>% 
+     pluck("normal") %>% 
+    dplyr::select(Site,Latitude,Longitude,Elevation) %>% 
+    left_join(x,by="Site") %>% 
+    mutate(Site=stringr::str_to_title(Site))
+ 
+  # # Save 
+  save(crnStats,file=here::here("data","crnStatsTable.RData"))
+
+```
+
+The chunk below will run the code:
+
+```{r}
+# Load chronology statistics
+load(here::here("data","crnStatsTable.RData"))
+
+crnStats %>% 
+  kable()
+
+```
+
+```{r}
+# EPS filter
+crnStats %>% 
+  filter(ew.eps<0.85 | lw.eps<0.85 | rw.eps<0.85)
+
+
+```
+
+Note that Parsnip and Wap1 have latewood EPS slightly below the EPS threshold of 0.85.  They were kept in the dataset because their EPS values are close to 0.85 and the other chronologies (RW and EW) have EPS above 0.85.
+
+## FIGURE: Site map
+Create a map showing sites.
+```{r}
+library(sf)
+library(ggplot2)
+library(bcmaps)
+
+# Create sites data
+sites <-
+  fdi2020 %>% 
+  pluck("clim") %>% 
+  pluck("normal") %>% 
+  dplyr::select(Site,Longitude,Latitude) %>% 
+  st_as_sf(coords=c("Longitude","Latitude"))
+
+# Select cities to plot
+cityBC<-
+  bcmaps::bc_cities() %>% 
+  filter(NAME%in%c("Prince George", "Vancouver","Williams Lake","Kelowna"))
+
+
+# Set CRS
+st_crs(sites) = 4326
+
+# Create site map
+siteMap<-
+  ggplot()+
+  geom_sf(data=bc_neighbours(),mapping=aes(fill=name))+
+  geom_sf(data=sites,mapping = aes(fill = Site)) + 
+  geom_sf(data=cityBC,color="red",shape=24,fill="red",size=1.5)+
+    theme(legend.position = "none")+
+  geom_sf_label(data=cityBC,aes(label = NAME),
+                fill=NA,
+                nudge_x=-25000,
+                nudge_y=-4000,
+                label.size=0)+
+  coord_sf(xlim = c(1020000,1280000), ylim = c(400000,1130000), expand = FALSE,crs=3005)+
+    theme(legend.position = "none")
+
+  siteMap
+
+```
+
+Can edit the map later.
+
+## Figure: boxplot of correlations between different chronology types
+
+*Note that I set this chunk not to run, because we only need to do this once*
+```{r eval=FALSE}
+
+# function to put sites together and compute correlation coefficients
+crnExt<-function(site) {
+  
+  
+  ew<-
+    fdi2020$crn$ew %>% 
+    rownames_to_column("year") %>% 
+    .[,c("year",site)] %>% 
+    setNames(c("year",paste(site,"ew",sep=".")))
+  
+  lw<-
+    fdi2020$crn$lw %>% 
+    rownames_to_column("year") %>% 
+    .[,c("year",site)] %>% 
+    setNames(c("year",paste(site,"lw",sep=".")))
+  
+ 
+    fdi2020$crn$rw %>% 
+    rownames_to_column("year") %>% 
+    .[,c("year",site)] %>% 
+    setNames(c("year",paste(site,"rw",sep="."))) %>% 
+    inner_join(ew,by="year") %>% 
+    inner_join(lw,by="year") %>% 
+    filter(year>=1940) %>%  # filter for 1940 time period
+    dplyr::select(-year) %>% 
+    cor() %>% # correlation matrix
+    .[lower.tri(.)] %>% 
+    setNames(c("rw.ew","rw.lw","ew.lw")) %>% 
+          c(site=site,.) %>% 
+      return()
+    
+}
+
+# Now run for all sites
+# and save to .RData file
+
+crnCorr<-
+  lapply(sites$Site,crnExt) %>% 
+  do.call(rbind.data.frame,.) %>% 
+  mutate_at(vars(2:4),function(x) as.numeric(as.character(x))) %>% # reformat to numeric
+  setNames(c("Site","rw.ew","rw.lw","ew.lw"))
+
+
+  save(crnCorr,file=here::here("data","crnCorrTable.RData"))
+  
+
+```
+
+The following chunk will load the correlation matrix between sites (1940-2005) and create a table.
+
+```{r}
+# Load chronology statistics
+load(here::here("data","crnCorrTable.RData"))
+
+crnCorr %>% 
+  kable(digits=2)
+
+```
+
+### Figure: Boxplot of correlations 
+```{r}
+crnCorr %>% 
+  pivot_longer(-Site,names_to="crn",values_to="corr") %>% 
+  ggplot()+
+  aes(y=corr,fill=crn)+
+  geom_boxplot()
+
+```
+
+We can see that correlations between earlywood and latewood are weakest.
+
+### Figure: Ew-Lw correlations by site climate
+
+```{r}
+crnCorr %>% 
+  left_join(fdi2020$clim$normal,by="Site") %>% 
+  ggplot()+
+  aes(y=ew.lw,x=AHM)+
+  geom_point()
+
+```
+
+Note very strong relationship between Ew-LW correlations and AHM, MAP, SHM, etc...
+
+There is one chronology that is an outlier, let's identify it.
+
+```{r}
+crnCorr %>% 
+  left_join(fdi2020$clim$normal,by="Site") %>% 
+  filter(AHM>25 & AHM<29) 
+
+
+```
+
+## Correlation and response coefficients
+Calculate response and correlation coefficients, as per the following algorithm:
+
+1. Use seasCorr() to identify important climatic seasons
+2. Use correlation and response function analysis
+
+#### seasCorr function
+We run the seasCorr function on each site to identify seasonal windows with maximal correlations with growth.  
+
+*Important: the climPrep() function is used to prepare climate data for seascorr.  This function will add very small random numbers to climate variables with SD==0, just so that seascorr will function.  This is ok for variable screening, as per seascorr, but we will use dcc() function with original climate data to derive correlation and response coefficients!*
+
+```{r}
+
+
+
+
+
+```
+
+
+

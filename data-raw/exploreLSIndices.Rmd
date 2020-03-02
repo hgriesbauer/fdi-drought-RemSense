@@ -54,6 +54,32 @@ fdiLS %>%
   ggplot()+
   geom_boxplot(aes(y=value))+
   facet_wrap(~index,scales="free_y")
-  
+```
+
+## Time series
+Plot out some time series for data screening.
+
+#### NDVI
+
+```{r}
+ndviRaw<-
+  fdiLS %>% 
+  ggplot()+
+  aes(x=date,y=ndvi)+
+  geom_line()
+
+plotly::ggplotly(ndviRaw)
+
+```
+
+#### NDWI
+```{r}
+ndwiRaw<-
+  fdiLS %>% 
+  ggplot()+
+  aes(x=date,y=ndwi)+
+  geom_line()
+
+plotly::ggplotly(ndwiRaw)
 
 ```
