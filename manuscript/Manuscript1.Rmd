@@ -281,13 +281,30 @@ We run the seasCorr function on each site to identify seasonal windows with maxi
 
 *Important: the climPrep() function is used to prepare climate data for seascorr.  This function will add very small random numbers to climate variables with SD==0, just so that seascorr will function.  This is ok for variable screening, as per seascorr, but we will use dcc() function with original climate data to derive correlation and response coefficients!*
 
-```{r}
+*Also note that the below chunk is not set to run (takes a very long time)*
 
+```{r eval=FALSE}
 
+x<-lapply(names(fdi2020$crn$rw),seasCorrSite)
 
+seasCorrCoef<-
+  do.call(rbind.data.frame,x) %>% 
+  mutate(site=str_sub(crn,1,-4)) %>% 
+  mutate(crn=str_sub(crn,-2,-1)) %>% 
+  dplyr::select(site,crn,climVar,window,end.month,coef,sig)
 
+save(seasCorrCoef,file=here::here("data","seasCorrCoef.RData"))
 
 ```
+
+We can load the correlation coefficients from seascorr here: 
+```{r}
+
+load(here::here("data","seasCorrCoef.RData"))
+
+```
+
+
 
 
 

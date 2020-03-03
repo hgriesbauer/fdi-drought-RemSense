@@ -46,10 +46,10 @@ climPrep<-function(site,t_span=c(1938,2005)) {
     # remove certain columns
     dplyr::select(-Rad,-site) %>% # remove certain variables
     
+    dplyr::select(year,month,Tmax,Tmin,Tave,PPT,Eref,CMD,PAS) %>% 
+    
     # convert to data frame
     as.data.frame()
-  
-  
   
   return(clim)
   
@@ -89,7 +89,7 @@ seasCorrExt<-function(crn,clim,var1,var2,t_span=c(1940,2005),winLength=c(1,3,6,9
       
       if(j==1 & k==1) seas.coef<-data.frame()
       
-      
+     
       seas.coef<-
         rbind(seas.coef,
         data.frame(crn=names(crn)[1],
@@ -100,17 +100,6 @@ seasCorrExt<-function(crn,clim,var1,var2,t_span=c(1940,2005),winLength=c(1,3,6,9
                    sig=x.out[[k]]$primary$significant)
         )
         
-                   
-                   
-                   
-      
-     
-      
-      
-      
-      
-      
-      
     } # close k loop
     } # close j loop
     
@@ -133,14 +122,16 @@ crnExt<-function(crnType,site) {
 }
 
 # Define seasCorrSite function - use this with seasCorrExt to extract coefficients for sites    
-seasCorrSite<-function(site) {
+seasCorrSite<-function(Site) {
   
   # calculate correlation coefficients using rw,lw and ew chronologies
-  clim=climPrep(site)
+  clim1=climPrep(Site)
   
- return(rbind(seasCorrExt(crn=crnExt("ew",site=site),clim),
-                seasCorrExt(crn=crnExt("lw",site=site),clim),
-                seasCorrExt(crn=crnExt("rw",site=site),clim)))
+  print(Site)
+  
+ return(rbind(seasCorrExt(crn=crnExt("ew",site=Site),clim1),
+                seasCorrExt(crn=crnExt("lw",site=Site),clim1),
+                seasCorrExt(crn=crnExt("rw",site=Site),clim1)))
  
 }    
   
